@@ -18,12 +18,16 @@
         document.getElementById('fileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-            const response = await fetch('/api/fileanalyse', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            try {
+                const response = await fetch('/api/fileanalyse', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent = JSON.stringify({ error: 'Failed to upload file' }, null, 2);
+            }
         });
     </script>
 </body>
