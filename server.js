@@ -1,65 +1,45 @@
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
 const multer = require('multer');
+const path = require('path');
+const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(cors());
 
-// Configure multer with increased file size limit
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 1 * 1024 * 1024 } // 1MB limit
+// Configure multer to store uploaded files in /uploads
+const upload = multer({ dest: path.join(__dirname, 'uploads') });
+
+// Route to serve index.html directly
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.use(helmet());
-app.use(cors({ origin: '*' }));
-app.use(morgan('combined'));
-app.use(express.static('public'));
-
-// Handle CORS preflight requests
-app.options('/api/fileanalyse', cors());
-
+// POST endpoint expected by FreeCodeCamp tests: /api/fileanalyse
 app.post('/api/fileanalyse', upload.single('upfile'), (req, res) => {
-  console.log('File upload attempt:', {
-    fieldname: req.file?.fieldname,
-    originalname: req.file?.originalname,
-    mimetype: req.file?.mimetype,
-    size: req.file?.size
-  });
-
   if (!req.file) {
-    console.log('No file uploaded or incorrect fieldname');
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  // Fix filename encoding for non-Latin characters
-  let filename;
+  let fileName = req.file.originalname;
   try {
-    filename = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-  } catch (e) {
-    console.log('Filename encoding error:', e.message);
-    filename = req.file.originalname; // Fallback
+    // محاولة لإصلاح مشكلة الترميز مع أسماء الملفات العربية
+    fileName = Buffer.from(fileName, 'latin1').toString('utf8');
+  } catch (err) {
+    // لو حصل خطأ نرجع الاسم زي ما هو
   }
 
-  res.json({
-    name: filename,
-    type: req.file.mimetype,
-    size: req.file.size
-  });
+  const { mimetype, size } = req.file;
+
+  res.json({ name: fileName, type: mimetype, size });
 });
 
-// Handle multer and other errors
-app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    console.log('Multer error:', err.message, 'File size:', req.file?.size);
-    return res.status(400).json({ error: `File upload error: ${err.message}` });
-  }
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Server error' });
+// A simple health route
+app.get('/api', (req, res) => {
+  res.json({ status: 'ok', message: 'File Metadata Microservice is running' });
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
+
