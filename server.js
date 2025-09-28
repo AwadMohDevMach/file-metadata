@@ -7,10 +7,10 @@ const multer = require('multer');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configure multer with strict file size limit and memory storage
+// Configure multer with increased file size limit
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 500 * 1024 } // 500KB limit for Vercel
+  limits: { fileSize: 1 * 1024 * 1024 } // 1MB limit
 });
 
 app.use(helmet());
@@ -40,7 +40,7 @@ app.post('/api/fileanalyse', upload.single('upfile'), (req, res) => {
     filename = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
   } catch (e) {
     console.log('Filename encoding error:', e.message);
-    filename = req.file.originalname; // Fallback to original if encoding fails
+    filename = req.file.originalname; // Fallback
   }
 
   res.json({
@@ -50,10 +50,10 @@ app.post('/api/fileanalyse', upload.single('upfile'), (req, res) => {
   });
 });
 
-// Handle multer errors
+// Handle multer and other errors
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    console.log('Multer error:', err.message);
+    console.log('Multer error:', err.message, 'File size:', req.file?.size);
     return res.status(400).json({ error: `File upload error: ${err.message}` });
   }
   console.error('Server error:', err);
