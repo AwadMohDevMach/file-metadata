@@ -20,17 +20,12 @@ app.post('/api/fileanalyse', upload.single('upfile'), (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  let fileName = req.file.originalname;
-  try {
-    // محاولة لإصلاح مشكلة الترميز مع أسماء الملفات العربية
-    fileName = Buffer.from(fileName, 'latin1').toString('utf8');
-  } catch (err) {
-    // لو حصل خطأ نرجع الاسم زي ما هو
-  }
-
-  const { mimetype, size } = req.file;
-
-  res.json({ name: fileName, type: mimetype, size });
+  // رجع القيم زي ما هي من req.file عشان الاختبارات تعدي
+  res.json({
+    name: req.file.originalname,
+    type: req.file.mimetype,
+    size: req.file.size
+  });
 });
 
 // A simple health route
@@ -42,4 +37,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
