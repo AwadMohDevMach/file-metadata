@@ -1,39 +1,43 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const cors = require('cors');
-
+const express = require("express");
+const multer = require("multer");
+const cors = require("cors");
 const app = express();
+
+// إعداد multer (الملفات في الرام)
+const upload = multer({ storage: multer.memoryStorage() });
+
 app.use(cors());
+app.use(express.static("views"));
 
-// Configure multer to store uploaded files in /uploads
-const upload = multer({ dest: path.join(__dirname, 'uploads') });
-
-// Route to serve index.html directly
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// UTF-8 headers
+app.use((req, res, next) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  next();
 });
 
-// POST endpoint expected by FreeCodeCamp tests: /api/fileanalyse
-app.post('/api/fileanalyse', upload.single('upfile'), (req, res) => {
+// الصفحة الرئيسية
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/views/index.html");
+});
+
+// API: رفع الملف
+app.post("/api/fileanalyse", upload.single("upfile"), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
+    return res.json({ error: "No file uploaded" });
   }
 
-  // رجع القيم زي ما هي من req.file عشان الاختبارات تعدي
+  // تأكد إن الاسم بيرجع UTF-8
+  const fileName = Buffer.from(req.file.originalname, "latin1").toString("utf8");
+
   res.json({
-    name: req.file.originalname,
+    name: fileName,
     type: req.file.mimetype,
     size: req.file.size
   });
 });
 
-// A simple health route
-app.get('/api', (req, res) => {
-  res.json({ status: 'ok', message: 'File Metadata Microservice is running' });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+// تشغيل السيرفر
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log("Server is running on port " + port);
 });
